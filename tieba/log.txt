@@ -1,0 +1,1 @@
+generate img: /Users/zyn/Comic/111/001001.jpg
