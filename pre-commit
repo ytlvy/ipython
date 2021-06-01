@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+
+import sys, os, re
+from subprocess import check_output
+
+def checkTest(path, content):
+    # print(content)
+
+    pattern = re.compile(r'.*(https://|http://)?([^/;\n+]*)test(\.|-)([^/;\n+]*)kuwo.*')
+
+    m = pattern.search(content)
+    if m != None:  
+        line = m.group()
+        if not line.startswith("//"):
+            print("commit failed:")
+            print("file :%s has test url" % path)
+            print("matched " + line)
+            return True
+        
+    
+    # print("no match")
+    return False
+
+def checkIP(path, content):
+    # print(content)
+
+    pattern = re.compile(r'.*(https://|http://)?(\d+\.){3,}.*')
+
+    m = pattern.search(content)
+    if m != None:  
+        line = m.group()
+        if not line.startswith("//"):
+            print("commit failed:")
+            print("file :%s has test url" % path)
+            print("matched " + line)
+            return True
+        
+    
+    # print("no match")
+    return False
+
+def fileCheck(path):
+    if len(path) < 1:
+        return
+
+    with open(path, 'r+') as f:
+        content = f.read()
+        res = checkTest(path, content)
+        if res:
+            exit(1)
+
+        res = checkIP(path, content)
+        if res:
+            exit(1)
+
+def diffCheck(path):
+    if len(path) <1:
+        return
+
+    stream = os.popen("git diff --cached " + path)
+    content = stream.read()
+    res = checkTest(path, content)
+    if res:
+        exit(1)
+
+    res = checkIP(path, content)
+    if res:
+        exit(1)
+
+def main():
+    # Collect the parameters
+    if len(sys.argv) > 1:
+        commit_msg_filepath = sys.argv[1]
+    else:
+        commit_msg_filepath = ''
+
+    if len(sys.argv) > 2:
+        commit_type = sys.argv[2]
+    else:
+        commit_type = ''
+
+    if len(sys.argv) > 3:
+        commit_hash = sys.argv[3]
+    else:
+        commit_hash = ''
+
+    # print "prepare-commit-msg: File: %s\nType: %s\nHash: %s" % (commit_msg_filepath, commit_type, commit_hash)
+
+    # Figure out which branch we're on
+    branch = check_output(['git', 'symbolic-ref', '--short', 'HEAD']).strip()
+    # print "prepare-commit-msg: On branch '%s'\n\n" % branch
+
+    #
+    stream = os.popen("git diff --cached --name-only --diff-filter=d -- '*.c' '*.h' '*.mm' '*.m' '*.swift'")
+    output = stream.read()
+
+    paths = output.split("\n")
+    for path in paths:
+        diffCheck(path)
+
+
+if __name__ == '__main__':
+    main()

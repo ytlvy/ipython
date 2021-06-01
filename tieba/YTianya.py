@@ -67,12 +67,12 @@ class YTieba(YTBase):
                              re.I | re.S)
         rs = pattern.search(con)
 
-        pattern = re.compile(r'<a href="[^"]+\-(\d+)\.[^"]*"[^>]*>',
+        linePattern = re.compile(r'\t(\d*)\b{3}KWPlayer\b{8}(\w*)',
                              re.I | re.S)
-        rs = re.findall(pattern, rs.group(1))
-        rs.sort()
+        rs = re.findall(linePattern, rs.group(1))
+        
 
-        return int(rs.pop()) if rs is not None else 1
+        return 
 
     def gen_page_urls(self, page_num):
         """
