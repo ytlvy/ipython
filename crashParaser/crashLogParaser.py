@@ -34,6 +34,7 @@ class CrashLogParaser():
         self.crashs = {}
         self.otherInfo = ""
         self.lineCount = 0
+        self.versionStatistic = {}
 
     def parse(self):
         fileHandle = open(self._filepath, mode='r')
@@ -54,6 +55,12 @@ class CrashLogParaser():
         info = crashInfo()
         info.rawdata = line
         info.version = self.parseVersion(line)
+
+        if info.version in self.versionStatistic:
+            self.versionStatistic[info.version] += 1
+        else:
+            self.versionStatistic[info.version] = 1
+
         info.reason  = self.parseException(line)
         info.loadAdress = self.parseLoadAddress(line)
         self.parseStack(line, info)
@@ -62,17 +69,19 @@ class CrashLogParaser():
     def parseStack(self, line, info):
 
         frames = self.parseFrames(line)
+        if(len(frames) < 1):
+            print(" 分析frame 失败:" + line)
 
         identifiers = []
         kwidentifiers = []
         for frame in frames:
             info.lines.append(frame)
             identifier = self.parseFrameidentifier(frame)
-            kwidentifier = self.parseFrameKwidentifier(frame)
+            # kwidentifier = self.parseFrameKwidentifier(frame)
 
             # print("identifier:" + identifier)
             identifiers.append(identifier)
-            kwidentifiers.append(kwidentifier)
+            # kwidentifiers.append(kwidentifier)
 
             kwaddress = self.parseKWAddress(frame)
             if(len(kwaddress) > 0):
@@ -92,6 +101,9 @@ class CrashLogParaser():
             outF.write(f'total crash:{self.lineCount}\n')
             outF.write("other statistic:\n")
             outF.write(self.otherInfo)
+            outF.write(os.linesep)
+            
+            outF.write(json.dumps(self.versionStatistic))
             outF.write(os.linesep)
 
             for v in sortedlist:
@@ -158,7 +170,7 @@ class CrashLogParaser():
         return rs.group(1)
 
     def parseFrames(self, line):
-        pattern = re.compile(r'Callstack \$ \(([^\)]*)\)', re.I | re.S)
+        pattern = re.compile(r'Callstack[^(]*\(([^\)]*)\)', re.I | re.S)
         rs = pattern.search(line)
         if rs == None or len(rs.group(1).strip()) < 1:
             return []
@@ -223,9 +235,6 @@ class CrashLogParaser():
             count += 1
             if(count > 50):
                 break
-
-
-
     
 
     def refreshStatics(self, info):
