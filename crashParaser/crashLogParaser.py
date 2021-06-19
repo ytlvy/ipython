@@ -6,6 +6,7 @@ import re
 import hashlib
 import codecs
 import json
+import ntpath
 
 class crashInfo:
     def __init__(self):
@@ -69,8 +70,8 @@ class CrashLogParaser():
     def parseStack(self, line, info):
 
         frames = self.parseFrames(line)
-        if(len(frames) < 1):
-            print(" 分析frame 失败:" + line)
+        # if(len(frames) < 1):
+        #     print(" 分析frame 失败:" + line)
 
         identifiers = []
         kwidentifiers = []
@@ -96,14 +97,17 @@ class CrashLogParaser():
             info.identifiers = identifiers
 
     def output(self, sortedlist):
-         with codecs.open("crashReport.txt", "w+", "utf-8") as outF:
+         filename = os.path.splitext(self._filepath)[0]
+         filename = ntpath.basename(filename) + "_report.txt"
+         with codecs.open(filename, "w+", "utf-8") as outF:
 
             outF.write(f'total crash:{self.lineCount}\n')
             outF.write("other statistic:\n")
             outF.write(self.otherInfo)
             outF.write(os.linesep)
             
-            outF.write(json.dumps(self.versionStatistic))
+            sortedVersion = dict(sorted(self.versionStatistic.items(), key=lambda item: item[1], reverse=True))
+            outF.write(json.dumps(sortedVersion))
             outF.write(os.linesep)
 
             for v in sortedlist:
